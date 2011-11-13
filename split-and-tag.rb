@@ -33,6 +33,10 @@ system(cmd)
 count = `cueprint -d '%N\n' \"#{options[:cue_file]}\"`.to_i
 
 def get_and_set_tags(cue_file, flac_file, num)
+	# Remove any/all tags before we start
+	cmd = "metaflac --remove-all-tags #{flac_file}"
+	system(cmd)
+
 	formats = Hash.new
 	formats[:title] = "%t"
 	formats[:album] = "%T"
@@ -50,7 +54,22 @@ def get_and_set_tags(cue_file, flac_file, num)
 		values[k] = `#{cmd}`
 	end
 
-	formats.each_pair do |k,v|
+	# We didn't get a genre?
+	if values[:genre].empty?
+		# maybe it's defined as a comment?
+		tmp = File.read("test.cue").scan(/^REM GENRE\s*(\w*)/).to_s
+		if !tmp.empty?
+			values[:genre] = tmp
+		end
+	end
+
+	# Album year
+	tmp = File.read("test.cue").scan(/^REM DATE\s*(\d*)/).to_s
+	if !tmp.empty?
+		values[:date] = tmp
+	end
+
+	values.each_pair do |k,v|
 		tag_val = "#{k.to_s.upcase}=#{values[k]}"
 		set_cmd = "metaflac --preserve-modtime --set-tag=\"#{tag_val}\" #{flac_file}"
 		system(set_cmd)
