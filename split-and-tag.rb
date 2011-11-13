@@ -57,14 +57,14 @@ def get_and_set_tags(cue_file, flac_file, num)
 	# We didn't get a genre?
 	if values[:genre].empty?
 		# maybe it's defined as a comment?
-		tmp = File.read("test.cue").scan(/^REM GENRE\s*(\w*)/).to_s
+		tmp = File.read(cue_file).scan(/^REM GENRE\s*(\w*)/).to_s
 		if !tmp.empty?
 			values[:genre] = tmp
 		end
 	end
 
 	# Album year
-	tmp = File.read("test.cue").scan(/^REM DATE\s*(\d*)/).to_s
+	tmp = File.read(cue_file).scan(/^REM DATE\s*(\d*)/).to_s
 	if !tmp.empty?
 		values[:date] = tmp
 	end
@@ -76,13 +76,32 @@ def get_and_set_tags(cue_file, flac_file, num)
 	end
 end
 
-(1..count).each do |n|
-	filename = "split-track"
-	if (count < 100)
-		filename = filename + "%02d.flac" % n
-	else
-		filename = filename + "%03d.flac" % n
+def rename_file(file)
+	track_num = file.scan(/(\d+)/)
+	title = `metaflac --show-tag=TITLE #{file}`.chomp.split(/=/)[1]
+	title.gsub!(" ", "_")
+	new_file = "#{track_num}-#{title}" + ".flac"
+
+	begin
+		print "Trying to rename #{file} to #{new_file} .."
+		File.rename(file, new_file)
+		print " done!\n"
+	rescue => e
+		print "\n"
+		puts "We were unable to rename #{file}. The error was: #{e}"
+		puts "Sorry about that."
 	end
 
-	get_and_set_tags(options[:cue_file], filename, n)
+end
+
+(1..count).each do |n|
+	split_filename = "split-track"
+	if (count < 100)
+		split_filename = split_filename + "%02d.flac" % n
+	else
+		split_filename = split_filename + "%03d.flac" % n
+	end
+
+	get_and_set_tags(options[:cue_file], split_filename, n)
+	rename_file(split_filename)
 end
