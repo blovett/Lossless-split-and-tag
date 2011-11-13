@@ -1,6 +1,3 @@
-Split and tag FLAC files.
--------------------------
-
 This program takes a single FLAC file and a corresponding CUE file and splits the file out into individual tracks, then tags the file with the details from the CUE file.
 
 # External dependencies
